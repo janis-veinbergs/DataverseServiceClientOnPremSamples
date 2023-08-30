@@ -1,4 +1,4 @@
-Examples on how to connect to Dynamics 365 CRM On-Prem using Dataverse Service Client (DVSC)
+Examples on how to connect to Dynamics 365 CRM On-Prem using Dataverse Service Client (DVSC). This repo is supporting material for the following article: [Using Dataverse Service Client to connect to OnPrem Dynamics 365 CRM (From .NET 6+)](https://dev.to/janisveinbergs/using-dataverse-service-client-to-connect-to-onprem-dynamics-365-crm-from-net-6-2ic4)
 
 In all cases, populate appsettings.json with your values for eaceh project.
 
