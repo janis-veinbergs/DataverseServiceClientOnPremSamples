@@ -8,13 +8,16 @@ ADFS requires specific configuration before all of this works.
 
 Connect to Dynamics 365 CRM On-Prem using ADFS 2019 and OAuth 2.0 using only connection string
 
-- [Authorization code grant](https://learn.microsoft.com/en-us/azure/active-directory/develop/msal-authentication-flows#authorization-code):
-  `AuthType=OAuth;Url=https://org.crm.example.com/;Username=user@example.com;Password=<pw>;RedirectUri=http://localhost:12345/whatever/;AppId=174697c7-4ec8-401a-88ce-e6af4d05b6dd;LoginPrompt=Always`
-	  UI required (browser). Takes 2 requests to get access token. MSAL library takes care of listening to particular port specified in RedirectUri, so that when first request goes out to ADFS and you get authorization code, browser on your computer where the app runs can get the response, extract authorization code and issue another request to ADFS to finally get the access token.
-- [Resource Owner Password Credentials grant](https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth-ropc):
-  `AuthType=OAuth;Url=https://org.crm.example.com/;Username=user@example.com;Password=<pw>;AppId=174697c7-4ec8-401a-88ce-e6af4d05b6dd;LoginPrompt=Never"`
-  You authenticate as particular user. No UI required. Takes 1 request to get access token.
-  Has drawbacks - no 2FA support, passwords with leading/trailing whitespace not supported etc. See [notes](https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth-ropc) and consider what applies to onprem.
+- [Authorization code grant](https://learn.microsoft.com/en-us/azure/active-directory/develop/msal-authentication-flows#authorization-code): `AuthType=OAuth;Url=https://org.crm.example.com/;Username=user@example.com;Password=<pw>;RedirectUri=http://localhost:54321;AppId=174697c7-4ec8-401a-88ce-e6af4d05b6dd;LoginPrompt=Always`
+   
+   UI required (browser). Takes 2 requests to get access token. MSAL library takes care of listening to particular port specified in RedirectUri, so that when first request goes out to ADFS and you get authorization code, browser on your computer where the app runs can get the response, extract authorization code and issue another request to ADFS to finally get the access token.
+- [Resource Owner Password Credentials grant](https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth-ropc): `AuthType=OAuth;Url=https://org.crm.example.com/;Username=user@example.com;Password=<pw>;AppId=174697c7-4ec8-401a-88ce-e6af4d05b6dd;LoginPrompt=Never`
+   
+   You authenticate as particular user. No UI required. Takes 1 request to get access token.
+   
+   This flow is considered for Desktop and Mobile application types, however I am going to use it for Service (Daemon) application as it requires no user interaction and I'm not so sure if [Client credentials](https://learn.microsoft.com/en-us/azure/active-directory/develop/msal-authentication-flows#client-credentials) flow (which is officially meant for daemon applications) can be supported by on-premises instance.
+   
+   Has drawbacks - no MFA support, passwords with leading/trailing whitespace not supported etc. See [notes](https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth-ropc) and consider what applies to on-premises.
 
 
 # ADFS2019DeviceFlow

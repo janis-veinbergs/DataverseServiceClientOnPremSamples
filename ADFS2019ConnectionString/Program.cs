@@ -22,7 +22,6 @@ namespace ADFS2019ConnectionString
             Program app = new();
             var connectionString = app.Configuration.GetConnectionString("default");
             ServiceClient serviceClient = new(connectionString, logger: Logger);
-            // Send a WhoAmI message request to the Organization service to obtain information about the logged on user.
             WhoAmIResponse resp = (WhoAmIResponse)serviceClient.Execute(new WhoAmIRequest());
             Console.WriteLine("User ID is {0}.", resp.UserId);
             var systemuser = serviceClient.Retrieve("systemuser", resp.UserId, new ColumnSet("fullname"));
