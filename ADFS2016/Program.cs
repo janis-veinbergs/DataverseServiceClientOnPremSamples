@@ -15,7 +15,10 @@ namespace ADFS2016
         Program()
         {
             var path = Environment.GetEnvironmentVariable("DATAVERSE_APPSETTINGS") ?? "appsettings.json";
-            Configuration = new ConfigurationBuilder().AddJsonFile(path, optional: false).Build();
+            Configuration = new ConfigurationBuilder()
+                .AddJsonFile(path, optional: false)
+                .AddJsonFile("appsettings.local.json", optional: true)
+                .Build();
         }
 
         static void Main(string[] args)

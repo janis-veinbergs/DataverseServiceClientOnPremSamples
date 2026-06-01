@@ -56,44 +56,29 @@ MSAL is not compatible with ADFS2016, thus DVSC cannot be used. Instead, use tok
    1260534b-00ca-4663-870f-d77b8d4ad6d3
    ```
    What does *openid* has to do anything with this? [It means]([AD FS OpenID Connect/OAuth concepts | Microsoft Learn](https://learn.microsoft.com/en-us/windows-server/identity/ad-fs/development/ad-fs-openid-connect-oauth-concepts#scopes)) that you allow your client application to use OpenID Connect (OIDC) authentication protocol.
-5. [OAuth must be enabled for CRM](https://learn.microsoft.com/en-us/dynamics365/customerengagement/on-premises/deploy/post-installation-configuration-guidelines-dynamics-365?view=op-9-1#configure-windows-server-for-dynamics-365-customer-engagement-on-premises-applications-that-use-oauth). Execute this on CRM server:
-   ```powershell
-   Add-PSSnapin Microsoft.Crm.PowerShell  
-   $ClaimsSettings = Get-CrmSetting -SettingType OAuthClaimsSettings  
-   $ClaimsSettings.Enabled = $true  
-   Set-CrmSetting -Setting $ClaimsSettings  
-   ```
-   If you want to validate OAuth is enabled, you must open: https://org.crm.example.com/XRMServices/2011/Organization.svc/web and see with, say, Fiddler, whether you get `WWW-Authenticate` header that is like: `Bearer redirect_uri=https://adfs.example.com/adfs/ls/`
+5. [OAuth must be enabled for CRM](https://learn.microsoft.com/en-us/dynamics365/customerengagement/on-premises/deploy/post-installation-configuration-guidelines-dynamics-365?view=op-9-1#configure-windows-server-for-dynamics-365-customer-engagement-on-premises-applications-that-use-oauth).
+
+    Execute this on CRM server:
+    ```powershell
+    Add-PSSnapin Microsoft.Crm.PowerShell  
+    $ClaimsSettings = Get-CrmSetting -SettingType OAuthClaimsSettings  
+    $ClaimsSettings.Enabled = $true  
+    Set-CrmSetting -Setting $ClaimsSettings  
+    ```
+6. There are some required steps documented after enabling OAuth. Particularly removing windows auth from 3 folders. Read [Required steps after enabling OAuth for Dynamics 365 Server](https://learn.microsoft.com/en-us/dynamics365/customerengagement/on-premises/deploy/post-installation-configuration-guidelines-dynamics-365?view=op-9-1#required-steps-after-enabling-oauth-for-dynamics-365-server)
+
+# Troublesthooting
+
+## Multiple WWW-Authenticate headers
+
+DVSC will fail to connect if you get multiple WWW-Authenticate headers. It is due to a bug in the client itself. [isOnPrem not passed down correctly when invoking GetAuthorityFromTargetServiceAsync ï¿½ Issue #396 ï¿½ microsoft/PowerPlatform-DataverseServiceClient (github.com)](https://github.com/microsoft/PowerPlatform-DataverseServiceClient/issues/396).
+
+Check if [Required steps after enabling OAuth for Dynamics 365 Serve](https://learn.microsoft.com/en-us/dynamics365/customerengagement/on-premises/deploy/post-installation-configuration-guidelines-dynamics-365?view=op-9-1#required-steps-after-enabling-oauth-for-dynamics-365-server)
    
-   You may get multiple headers, like `WWW-Authenticate: Negotiate` and `WWW-Authenticate: NTLM`, but one with `Bearer` must be present. If you don't want to configure fiddler to catch TLS requests, you can check what headers that request returns like this:
-   ```powershell
-   > Invoke-WebRequest -Uri "https://org.crm.exmple.com/XRMServices/2011/Organization.svc/web" -UseBasicParsing
-   > $error[0].exception.response.headers["WWW-Authenticate"]
-   
-   Bearer authorization_uri=https://adfs.example.com/adfs/oauth2/authorize, resource_id=https://org.crm.example.com/
-   ```
-   Don't worry, the Invoke-WebRequest returns 401 error - it is expected.
-6.  As of writing, the DVSC will fail to connect if you get multiple WWW-Authenticate headers. It is due to a bug in the client itself and hopefully it gets fixed. [isOnPrem not passed down correctly when invoking GetAuthorityFromTargetServiceAsync · Issue #396 · microsoft/PowerPlatform-DataverseServiceClient (github.com)](https://github.com/microsoft/PowerPlatform-DataverseServiceClient/issues/396).
-   
-   Thus, at the time of writing, we need additional configuration:
+Or ensure that windowsAuthentication is disabled:
    
    1. Open `C:\windows\system32\inetsrv\config\applicationHost.config` on CRM server.
-   2. Find this XML element:
-   ```xml
-       <location path="Microsoft Dynamics CRM/XRMServices/2011/Organization.svc">
-        <system.webServer>
-            <security>
-                <authentication>
-                    <digestAuthentication enabled="false" />
-                    <basicAuthentication enabled="false" />
-                    <anonymousAuthentication enabled="true" />
-                    <windowsAuthentication enabled="true" />
-                </authentication>
-            </security>
-        </system.webServer>
-    </location>
-   ```
-   3. Change windowsAuthentication to false:
+   2. Check that windowsAuthentication is false:
    ```xml
        <location path="Microsoft Dynamics CRM/XRMServices/2011/Organization.svc">
         <system.webServer>
@@ -108,3 +93,24 @@ MSAL is not compatible with ADFS2016, thus DVSC cannot be used. Instead, use tok
         </system.webServer>
     </location>
    ```
+
+In the end there should be single WWW-Authenticate Bearer header in response:
+
+If you want to validate OAuth is enabled, you must open: https://org.crm.example.com/XRMServices/2011/Organization.svc/web and see with, say, Fiddler, whether you get `WWW-Authenticate` header that is like: `Bearer redirect_uri=https://adfs.example.com/adfs/ls/`
+
+You may get multiple headers, like `WWW-Authenticate: Negotiate` and `WWW-Authenticate: NTLM`, but one with `Bearer` must be present. If you don't want to configure fiddler to catch TLS requests, you can check what headers that request returns like this:
+```powershell
+> Invoke-WebRequest -Uri "https://org.crm.exmple.com/XRMServices/2011/Organization.svc/web" -UseBasicParsing
+> $error[0].exception.response.headers["WWW-Authenticate"]
+
+Bearer authorization_uri=https://adfs.example.com/adfs/oauth2/authorize, resource_id=https://org.crm.example.com/
+```
+Don't worry, the Invoke-WebRequest returns 401 error - it is expected.
+
+## Error about loopback redirect uri
+
+You will get this error if password is wrong:
+
+```
+Error: Only loopback redirect uri is supported, but urn:ietf:wg:oauth:2.0:oob was found. Configure http://localhost or http://localhost:port both during app registration and when you create the PublicClientApplication object. See https://aka.ms/msal-net-os-browser for details
+```

@@ -17,7 +17,10 @@ namespace ADFS2019DeviceFlow
         Program()
         {
             var path = Environment.GetEnvironmentVariable("DATAVERSE_APPSETTINGS") ?? "appsettings.json";
-            Configuration = new ConfigurationBuilder().AddJsonFile(path, optional: false).Build();
+            Configuration = new ConfigurationBuilder()
+                .AddJsonFile(path, optional: false)
+                .AddJsonFile("appsettings.local.json", optional: true)
+                .Build();
             Auth = PublicClientApplicationBuilder.Create(Configuration["AppId"] ?? throw new ArgumentNullException("AppId"))
                 .WithAdfsAuthority(Configuration["AdfsUrl"] ?? throw new ArgumentNullException("AdfsUrl"))
                 .Build();
